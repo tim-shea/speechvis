@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../buckeyevis/.idea/buckeyevis.iml" filepath="$PROJECT_DIR$/../buckeyevis/.idea/buckeyevis.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/speechvis.iml" filepath="$PROJECT_DIR$/.idea/speechvis.iml" />
     </modules>
   </component>
