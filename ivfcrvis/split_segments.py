@@ -5,8 +5,8 @@ from scipy.io import wavfile
 from matplotlib import pyplot
 
 
-ivfcr_root = 'D:/ivfcr/'
-subject_id = 'e20131030_125347_009146'
+default_root = 'D:/ivfcr'
+sample_recording_id = 'e20131030_125347_009146'
 
 
 def parse_time(formatted):
@@ -15,38 +15,42 @@ def parse_time(formatted):
         return float(formatted[2:-1])
 
 
-def get_vocalization_labels():
+def read_segment_labels(root, recording_id):
     starts = []
     ends = []
-    categories = []
-    tree = ElementTree.parse(ivfcr_root + subject_id + '.its')
+    speakers = []
+    tree = ElementTree.parse('{0}/{1}.its'.format(root, recording_id))
     root = tree.getroot()
     for segment in root.iter('Segment'):
-        categories.append(segment.attrib['spkr'])
+        speakers.append(segment.attrib['spkr'])
         starts.append(parse_time(segment.attrib['startTime']))
         ends.append(parse_time(segment.attrib['endTime']))
-    return numpy.array(starts), numpy.array(ends), categories
+    return numpy.array(starts), numpy.array(ends), speakers
 
 
-def filter_vocalization_category(starts, ends, labels, category):
-    index = numpy.array(labels) == category
+def filter_segments_by_speaker(starts, ends, labels, speaker):
+    index = numpy.array(labels) == speaker
     return starts[index], ends[index]
 
 
-def get_recording():
-    return wavfile.read(ivfcr_root + subject_id + '.wav')
+def read_recording(root, id):
+    return wavfile.read(root + id + '.wav')
 
 
-def split_vocalizations(starts, ends, categories, sample_rate, recording):
+def read_segment(root, id, category, number):
+    return wavfile.read('{0}/{1}/{2}/{3}.wav'.format(root, id, category, number))
+
+
+def split_segments(root, id, starts, ends, speakers, sample_rate, recording):
     sequence = 0
-    if not os.path.exists(ivfcr_root + '/' + subject_id):
-        os.makedirs(ivfcr_root + '/' + subject_id)
-    for category in set(categories):
-        if not os.path.exists(ivfcr_root + '/' + subject_id + '/' + category):
-            os.makedirs(ivfcr_root + '/' + subject_id + '/' + category)
-    for start, end, category in zip(starts, ends, categories):
+    if not os.path.exists(root + '/' + id):
+        os.makedirs(root + '/' + id)
+    for speaker in set(speakers):
+        if not os.path.exists(root + '/' + id + '/' + speaker):
+            os.makedirs(root + '/' + id + '/' + speaker)
+    for start, end, speaker in zip(starts, ends, speakers):
         data = recording[int(start * sample_rate):int(end * sample_rate)]
-        wavfile.write(ivfcr_root + subject_id + '/{0}/{1}.wav'.format(category, sequence), sample_rate, data)
+        wavfile.write(root + id + '/{0}/{1}.wav'.format(speaker, sequence), sample_rate, data)
         sequence = sequence + 1
 
 
@@ -68,9 +72,3 @@ def plot_intervals(starts, ends):
     pyplot.subplot(2, 1, 2)
     #pyplot.hist(intervals, bins=numpy.logspace(0, 4))
     pyplot.plot(numpy.sort(intervals), numpy.linspace(0, 1, numpy.size(intervals)))
-
-
-if __name__ == "__main__":
-    starts, ends, categories = get_vocalization_labels()
-    sample_rate, recording = get_recording()
-    split_vocalizations(starts, ends, categories, sample_rate, recording)
