@@ -14,6 +14,15 @@ class Segment:
         self.samples = len(self.signal)
         self.duration = len(self.signal) / self.sample_rate
 
+    def power(self, window_size, step_size):
+        steps = numpy.arange(window_size, self.signal.size, step_size)
+        power = numpy.zeros(len(steps))
+        for i, step in zip(range(len(steps)), steps):
+            windowed_signal = self.signal[step-window_size:step].astype(int)
+            rms = numpy.sqrt(numpy.mean(numpy.square(windowed_signal)))
+            power[i] = 10 * numpy.log10(rms)
+        return steps / float(self.sample_rate), power
+
     def power_spectrum(self, window_size, step_size):
         frequencies = numpy.fft.rfftfreq(window_size, d=1./self.sample_rate)
         spectrum = numpy.ndarray((0, frequencies.size))
@@ -35,24 +44,34 @@ class Segment:
                     peaks.append((x, y))
             peaks = numpy.array(peaks)
             peaks = peaks[numpy.argsort(peaks[:,1]),:]
-            formants[step,:peaks.size] = numpy.sort(frequencies[peaks[-count:,0].astype(int)])
+            f = numpy.sort(frequencies[peaks[-count:,0].astype(int)])
+            f = numpy.pad(f, (0, count - f.size), 'constant', constant_values=float('NaN'))
+            formants[step,:] = f
         return formants
 
 
-def plot_segment(segment):
+def plot_segment(segment, window_size, step_size):
     pyplot.figure()
-    pyplot.subplot(3, 1, 1)
+    pyplot.subplot(2, 2, 1)
     pyplot.plot(numpy.linspace(0, segment.duration, segment.samples), segment.signal)
     pyplot.xlim(0, segment.duration)
     pyplot.xlabel('Time (s)')
     pyplot.ylabel('Sound Pressure')
-    pyplot.subplot(3, 1, 2)
-    pyplot.specgram(segment.signal, NFFT=128, Fs=segment.sample_rate, noverlap=64)
+    pyplot.subplot(2, 2, 2)
+    steps, power = segment.power(window_size, step_size)
+    pyplot.plot(steps, power)
+    pyplot.xlim(0, segment.duration)
+    pyplot.xlabel('Time (s)')
+    pyplot.ylabel('Power (dB)')
+    pyplot.subplot(2, 2, 3)
+    pyplot.specgram(segment.signal, NFFT=window_size, Fs=segment.sample_rate, noverlap=step_size)
+    formants = segment.formants(window_size, step_size, 4)
+    pyplot.plot(numpy.linspace(0, segment.duration, len(formants)), formants, 'o')
     pyplot.xlim(0, segment.duration)
     pyplot.xlabel('Time (s)')
     pyplot.ylabel('Frequency (Hz)')
-    pyplot.subplot(3, 1, 3)
-    frequencies, spectrum = segment.power_spectrum(128, 128)
+    pyplot.subplot(2, 2, 4)
+    frequencies, spectrum = segment.power_spectrum(window_size, step_size)
     pyplot.plot(frequencies / 1000, 10 * numpy.log10(numpy.mean(spectrum, axis=0)))
     pyplot.xlabel('Frequency (kHz)')
     pyplot.ylabel('Power (dB)')
