@@ -1,6 +1,6 @@
 import numpy
 import matplotlib.pyplot as pyplot
-from sklearn.decomposition import PCA
+from sklearn.decomposition import FastICA
 from ivfcrvis import recording as rec
 from ivfcrvis.mfcc_analysis import speaker_mfccs
 import scipy.spatial as spatial
@@ -79,17 +79,18 @@ class FollowDotCursor(object):
             return self._points[0]
 
 
-def plot_mfcc_pca():
+if __name__ == "__main__":
     recording = rec.Recording('E:/ivfcr', rec.Recording.ids[0])
     index, _, _ = recording.filter_speaker('CHN')
     starts, ends, mfccs = speaker_mfccs(recording, 'CHN')
-    pca = PCA(n_components=2)
-    x = pca.fit_transform(mfccs)
+    ica = FastICA(n_components=2)
+    x = ica.fit_transform(mfccs)
     fig, ax = pyplot.subplots()
-    comp1_label = 'Comp 1 ({0:.2f}% Variance)'.format(100 * pca.explained_variance_ratio_[0])
-    comp2_label = 'Comp 2 ({0:.2f}% Variance)'.format(100 * pca.explained_variance_ratio_[1])
+    comp1_label = 'Component 1'
+    comp2_label = 'Component 2'
     cursor = FollowDotCursor(ax, index, x[:,0], x[:,1], formatter=fmt, tolerance=20)
-    pyplot.scatter(x[:,0], x[:,1], c=starts, cmap=pyplot.cm.get_cmap('hot'))
+    pyplot.plot(x[:100,0], x[:100,1])
     pyplot.xlabel(comp1_label)
     pyplot.ylabel(comp2_label)
-    pyplot.title('Principal Components of {0} MFCCs'.format(len(index)))
+
+    pyplot.title('Fast ICA of {0} MFCCs'.format(len(index)))

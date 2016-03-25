@@ -4,18 +4,19 @@ import math
 from xml.etree import ElementTree
 from scipy.io import wavfile
 from matplotlib import pyplot
+import seaborn
 
 
-class LenaRecording:
+class Recording:
     default_root = 'D:/ivfcr'
-    recording_ids = ['e20131030_125347_009146',
-                     'e20151207_200648_010576',
-                     'e20151210_145625_010585',
-                     'e20151223_131722_010570',
-                     'e20160102_095210_010584',
-                     'e20160222_122221_010581']
+    ids = ['e20131030_125347_009146',
+            'e20151207_200648_010576',
+            'e20151210_145625_010585',
+            'e20151223_131722_010570',
+            'e20160102_095210_010584',
+            'e20160222_122221_010581']
 
-    def __init__(self, root=default_root, recording_id=recording_ids[0]):
+    def __init__(self, root=default_root, recording_id=ids[0]):
         self.root = root
         self.recording_id = recording_id
         starts = []
@@ -53,7 +54,7 @@ class LenaRecording:
 
     def filter_speaker(self, speaker):
         index = numpy.array(self.speakers) == speaker
-        return numpy.where(index), self.starts[index], self.ends[index]
+        return numpy.where(index)[0], self.starts[index], self.ends[index]
 
 
 def parse_time(formatted):
@@ -66,8 +67,11 @@ def plot_speaker_counts(recording):
     speakers, counts = numpy.unique(recording.speakers, return_counts=True)
     pyplot.figure()
     pyplot.bar(numpy.arange(len(speakers)) + 0.1, counts)
+    pyplot.title('Number of Vocalizations by Speaker')
     pyplot.xticks(numpy.arange(len(speakers)) + 0.5, speakers)
     pyplot.xlim(0, len(speakers))
+    pyplot.xlabel('Speaker')
+    pyplot.ylabel('Count')
 
 
 def plot_durations(recording, speaker=None):
@@ -80,23 +84,35 @@ def plot_durations(recording, speaker=None):
     pyplot.figure()
     pyplot.subplot(2, 1, 1)
     pyplot.plot(starts + durations / 2, durations)
+    pyplot.title('Vocalization Durations for {0}'.format('ALL' if speaker is None else speaker))
+    pyplot.xlabel('Time (s)')
+    pyplot.ylabel('Duration (s)')
     pyplot.subplot(2, 1, 2)
     pyplot.hist(durations, bins=numpy.logspace(0, 4, 100))
     pyplot.xscale('log')
     pyplot.yscale('log')
+    pyplot.xlabel('Duration (s)')
+    pyplot.ylabel('Count')
 
 
-def plot_speaker_intervals(recording, speaker):
+def plot_intervals(recording, speaker):
     i, starts, ends = recording.filter_speaker(speaker)
     intervals = starts[1:] - ends[:-1]
     pyplot.figure()
     pyplot.subplot(2, 1, 1)
     pyplot.plot(starts[1:], intervals)
+    pyplot.title('Vocalization Intervals for {0}'.format(speaker))
+    pyplot.xlabel('Time (s)')
+    pyplot.ylabel('Interval (s)')
     pyplot.subplot(2, 1, 2)
     pyplot.hist(intervals, bins=numpy.logspace(0, 4, 50))
+    pyplot.xscale('log')
+    pyplot.yscale('log')
+    pyplot.xlabel('Interval (s)')
+    pyplot.ylabel('Count')
 
 
-def plot_speaker_volubility(recording, speaker):
+def plot_volubility(recording, speaker):
     minutes = math.ceil((recording.ends[-1] - recording.starts[0]) / 60)
     volubility = numpy.zeros(minutes)
     i, starts, ends = recording.filter_speaker(speaker)
@@ -107,6 +123,13 @@ def plot_speaker_volubility(recording, speaker):
             volubility[m] += max(min(end_minute, end) - max(start_minute, start), 0)
     volubility /= 60
     pyplot.figure()
+    pyplot.subplot(2, 1, 1)
     pyplot.plot(60 * numpy.arange(minutes), volubility)
-    pyplot.plot(starts, numpy.ones_like(starts), '|g')
-    pyplot.plot(ends, numpy.zeros_like(ends), '|r')
+    pyplot.title('Volubility for {0}'.format(speaker))
+    pyplot.xlabel('Time (min)')
+    pyplot.ylabel('Vocalized Seconds / Minute')
+    pyplot.subplot(2, 1, 2)
+    pyplot.hist(volubility, bins=50)
+    pyplot.yscale('log')
+    pyplot.xlabel('Volubility')
+    pyplot.ylabel('Count')

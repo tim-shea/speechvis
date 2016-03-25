@@ -1,5 +1,6 @@
-from ivfcrvis.lena import LenaRecording
+from ivfcrvis.recording import Recording
 from matplotlib import pyplot
+from features import mfcc
 import numpy
 from scipy.signal import savgol_filter
 
@@ -49,6 +50,10 @@ class Segment:
             formants[step,:] = f
         return formants
 
+    def mfccs(self):
+        return mfcc(self.signal[:int(0.6 * self.sample_rate)], self.sample_rate, winlen=0.05, winstep=0.05, numcep=40, nfilt=80)
+        #return mfcc(self.signal[:int(0.6 * self.sample_rate)], self.sample_rate)
+
 
 def plot_segment(segment, window_size, step_size):
     pyplot.figure()
@@ -65,7 +70,7 @@ def plot_segment(segment, window_size, step_size):
     pyplot.ylabel('Power (dB)')
     pyplot.subplot(2, 2, 3)
     pyplot.specgram(segment.signal, NFFT=window_size, Fs=segment.sample_rate, noverlap=step_size)
-    formants = segment.formants(window_size, step_size, 4)
+    formants = segment.formants(window_size, step_size, 2)
     pyplot.plot(numpy.linspace(0, segment.duration, len(formants)), formants, 'o')
     pyplot.xlim(0, segment.duration)
     pyplot.xlabel('Time (s)')
@@ -75,3 +80,16 @@ def plot_segment(segment, window_size, step_size):
     pyplot.plot(frequencies / 1000, 10 * numpy.log10(numpy.mean(spectrum, axis=0)))
     pyplot.xlabel('Frequency (kHz)')
     pyplot.ylabel('Power (dB)')
+
+
+def plot_sample_mfccs(recording):
+    index = numpy.where(numpy.array(recording.speakers) == 'FAN')[0]
+    pyplot.figure()
+    for i,j in zip(index[:4], range(1, 5)):
+        segment = Segment(recording, 'FAN', i)
+        pyplot.subplot(2, 2, j)
+        pyplot.title('Vocalization {0} MFCC'.format(i))
+        pyplot.imshow(segment.mfccs().transpose(), extent=[0, 600, 0, 13], aspect='auto', interpolation='nearest', cmap=pyplot.cm.get_cmap('Spectral'))
+        pyplot.xlabel('Time (ms)')
+        pyplot.ylabel('Coefficient')
+        pyplot.colorbar()
