@@ -5,6 +5,15 @@ from scipy.stats import pearsonr
 from matplotlib import pyplot
 
 
+def speaker_frequency_banks(recording, speaker):
+    index, starts, ends = recording.filter_speaker(speaker)
+    fbanks = numpy.ndarray((len(starts), 312))
+    for i in range(len(index)):
+        fbank = Segment(recording, speaker, index[i]).frequencybank()
+        fbanks[i,:] = fbank.reshape(fbank.size)
+    return starts, ends, fbanks
+
+
 def speaker_mfccs(recording, speaker):
     index, starts, ends = recording.filter_speaker(speaker)
     mfccs = numpy.ndarray((len(starts), 480))

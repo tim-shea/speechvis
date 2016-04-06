@@ -1,6 +1,6 @@
 from ivfcrvis.recording import Recording
 from matplotlib import pyplot
-from features import mfcc
+from features import mfcc, logfbank
 import numpy
 from scipy.signal import savgol_filter
 
@@ -50,9 +50,11 @@ class Segment:
             formants[step,:] = f
         return formants
 
+    def frequencybank(self):
+        return logfbank(self.signal[:int(0.6 * self.sample_rate)], self.sample_rate, winlen=0.05, winstep=0.05)
+
     def mfccs(self):
         return mfcc(self.signal[:int(0.6 * self.sample_rate)], self.sample_rate, winlen=0.05, winstep=0.05, numcep=40, nfilt=80)
-        #return mfcc(self.signal[:int(0.6 * self.sample_rate)], self.sample_rate)
 
 
 def plot_segment(segment, window_size, step_size):

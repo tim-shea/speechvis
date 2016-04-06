@@ -1,4 +1,3 @@
-import sys
 import numpy
 from scipy.io import wavfile
 import sounddevice as sd
