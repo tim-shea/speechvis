@@ -1,23 +1,12 @@
 import numpy
 import matplotlib.pyplot as pyplot
 from sklearn.decomposition import PCA
-from ivfcrvis import recording as rec
 from ivfcrvis.mfcc_analysis import speaker_mfccs
 import scipy.spatial as spatial
 
-
-def fmt(i, x, y):
-    import subprocess
-    command = 'start {root}/{subject_id}/CHN/{voc}.wav'.format(root='E:/ivfcr', subject_id=rec.Recording.ids[0], voc=i)
-    print(command)
-    subprocess.call(command, shell=True)
-    return 'Voc: {i:.0f}\nx: {x:0.2f}\ny: {y:0.2f}'.format(i=i, x=x, y=y)
-
-
 class FollowDotCursor(object):
-    """Display the x,y location of the nearest data point.
-    """
-    def __init__(self, ax, index, x, y, tolerance=5, formatter=fmt, offsets=(-20, 20)):
+    """Display the x,y location of the nearest data point. """
+    def __init__(self, ax, index, x, y, tolerance, formatter, offsets=(-20, 20)):
         self._points = numpy.column_stack((x, y))
         self._index = index
         self.offsets = offsets
@@ -28,11 +17,9 @@ class FollowDotCursor(object):
         self.tolerance = tolerance
         self.ax = ax
         self.fig = ax.figure
-        #self.ax.xaxis.set_label_position('top')
         self.dot = ax.scatter(
             [x.min()], [y.min()], s=130, color='green', alpha=0.7)
         self.annotation = self.setup_annotation()
-        #pyplot.connect('motion_notify_event', self)
         pyplot.connect('button_press_event', self)
 
     def scaled(self, points):
@@ -79,15 +66,28 @@ class FollowDotCursor(object):
             return self._points[0]
 
 
-def plot_mfcc_pca():
-    recording = rec.Recording('E:/ivfcr', rec.Recording.ids[0])
-    index, _, _ = recording.filter_speaker('CHN')
-    starts, ends, mfccs = speaker_mfccs(recording, 'CHN')
+def plot_mfcc_pca(recording, speaker):
+    """ Performs a Principal Components decomposition on the set of Mel-Frequency Cepstral Coefficients extracted
+    from the selected speaker's vocalizations.
+    :param recording: A Recording object to analyze
+    :param speaker: The LENA speaker category to analyze
+    """
+    index, _, _ = recording.filter_speaker(speaker)
+    starts, ends, mfccs = speaker_mfccs(recording, speaker)
     pca = PCA(n_components=2)
     x = pca.fit_transform(mfccs)
     fig, ax = pyplot.subplots()
     comp1_label = 'Comp 1 ({0:.2f}% Variance)'.format(100 * pca.explained_variance_ratio_[0])
     comp2_label = 'Comp 2 ({0:.2f}% Variance)'.format(100 * pca.explained_variance_ratio_[1])
+
+    def fmt(i, x, y):
+        import subprocess
+        command = 'start {root}/{subject_id}/{speaker}/{voc}.wav'.format(
+            root=recording.root, subject_id=recording.recording_id, speaker=speaker, voc=i)
+        print(command)
+        subprocess.call(command, shell=True)
+        return 'Voc: {i:.0f}\nx: {x:0.2f}\ny: {y:0.2f}'.format(i=i, x=x, y=y)
+
     cursor = FollowDotCursor(ax, index, x[:,0], x[:,1], formatter=fmt, tolerance=20)
     pyplot.scatter(x[:,0], x[:,1], c=starts, cmap=pyplot.cm.get_cmap('hot'))
     pyplot.xlabel(comp1_label)

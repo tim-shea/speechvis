@@ -4,19 +4,16 @@ import math
 from xml.etree import ElementTree
 from scipy.io import wavfile
 from matplotlib import pyplot
-import seaborn
 
 
 class Recording:
-    default_root = 'D:/ivfcr'
-    ids = ['e20131030_125347_009146',
-            'e20151207_200648_010576',
-            'e20151210_145625_010585',
-            'e20151223_131722_010570',
-            'e20160102_095210_010584',
-            'e20160222_122221_010581']
+    """Recording reads an ITS file exported from LENA and parses out data about the segments and speakers in the
+    corresponding WAV file. It also contains a method to split and save out individual segments as WAV files for
+    acoustic analysis."""
 
-    def __init__(self, root=default_root, recording_id=ids[0]):
+    def __init__(self, root, recording_id):
+        """Construct a new Recording by reading the ITS file in the directory root with a filename derived from
+        recording_id."""
         self.root = root
         self.recording_id = recording_id
         starts = []
@@ -33,9 +30,12 @@ class Recording:
         self.speakers = speakers
 
     def read_recording(self):
+        """Read the WAV file corresponding to this Recording. This is deferred because it can be slow."""
         return wavfile.read(os.path.join(self.root, '{0}.wav'.format(self.root, self.recording_id)))
 
     def split_segments(self):
+        """Split the WAV file for this recording into individual segments and save those segments in a directory
+        structure according to the identified speaker."""
         recording_dir = os.path.join(self.root, self.recording_id)
         if not os.path.exists(recording_dir):
             os.makedirs(recording_dir)
@@ -49,21 +49,25 @@ class Recording:
             wavfile.write(os.path.join(recording_dir, speaker, '{0}.wav'.format(i)), sample_rate, segment)
 
     def read_segment(self, category, i):
+        """Read an individual segment WAV file. Returns the sample rate and signal."""
         filename = os.path.join(self.root, self.recording_id, category, '{0}.wav'.format(i))
         return wavfile.read(filename)
 
     def filter_speaker(self, speaker):
+        """Return the indices, start times, and end times of all segments labeled with the speaker."""
         index = numpy.array(self.speakers) == speaker
         return numpy.where(index)[0], self.starts[index], self.ends[index]
 
 
 def parse_time(formatted):
-            # TODO: This should not require Pacific timezone, lookup lena format spec
-            if formatted.startswith('PT') and formatted.endswith('S'):
-                return float(formatted[2:-1])
+    """Returns the time in seconds indicated by the formatted string."""
+    # TODO: This should not require Pacific timezone, lookup lena format spec
+    if formatted.startswith('PT') and formatted.endswith('S'):
+        return float(formatted[2:-1])
 
 
 def plot_speaker_counts(recording):
+    """Plot the number of segments in the recording for each speaker."""
     speakers, counts = numpy.unique(recording.speakers, return_counts=True)
     pyplot.figure()
     pyplot.bar(numpy.arange(len(speakers)) + 0.1, counts)
@@ -75,6 +79,7 @@ def plot_speaker_counts(recording):
 
 
 def plot_durations(recording, speaker=None):
+    """Plot a time series and a histogram of segment durations, optionally filtered for a speaker."""
     if speaker is None:
         starts = recording.starts
         ends = recording.ends
@@ -96,6 +101,7 @@ def plot_durations(recording, speaker=None):
 
 
 def plot_intervals(recording, speaker):
+    """Plot a time series and histogram of segment intervals labeled as speaker."""
     i, starts, ends = recording.filter_speaker(speaker)
     intervals = starts[1:] - ends[:-1]
     pyplot.figure()
@@ -113,6 +119,8 @@ def plot_intervals(recording, speaker):
 
 
 def plot_volubility(recording, speaker):
+    """Plot the volubility ratio (proportion of time that speaker is speaking) as a time series and histogram. This
+    analysis uses one minute blocks to aggregate segments."""
     minutes = math.ceil((recording.ends[-1] - recording.starts[0]) / 60)
     volubility = numpy.zeros(minutes)
     i, starts, ends = recording.filter_speaker(speaker)

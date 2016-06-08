@@ -6,6 +6,8 @@ from matplotlib import pyplot
 
 
 def speaker_frequency_banks(recording, speaker):
+    """Returns the start times, end times, and Mel-frequency filter banks for every segment labeled as speaker in the
+    recording."""
     index, starts, ends = recording.filter_speaker(speaker)
     fbanks = numpy.ndarray((len(starts), 312))
     for i in range(len(index)):
@@ -15,6 +17,7 @@ def speaker_frequency_banks(recording, speaker):
 
 
 def speaker_mfccs(recording, speaker):
+    """Returns the start times, end times, and MFCCs for every segment labeled as speaker in the recording."""
     index, starts, ends = recording.filter_speaker(speaker)
     mfccs = numpy.ndarray((len(starts), 480))
     for i in range(len(index)):
@@ -23,6 +26,7 @@ def speaker_mfccs(recording, speaker):
 
 
 def plot_mfcc_feature(recording, speaker, x):
+    """Plot a time series and histogram of a particular feature (pixel) in the set of MFCCs for a speaker."""
     starts, ends, mfccs = speaker_mfccs(recording, speaker)
     pyplot.figure()
     pyplot.subplot(2, 1, 1)
@@ -37,6 +41,8 @@ def plot_mfcc_feature(recording, speaker, x):
 
 
 def plot_mfcc_steps(recording, speaker):
+    """Plot the time series, histogram, and scatter against interval for the MFCC step size (distance between MFCC
+    pairs) for all segments labeled as speaker in the recording."""
     starts, ends, mfccs = speaker_mfccs(recording, speaker)
     steps = numpy.linalg.norm(numpy.diff(mfccs, axis=0), axis=1)
     pyplot.figure()
