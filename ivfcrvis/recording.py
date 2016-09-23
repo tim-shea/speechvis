@@ -4,6 +4,7 @@ import math
 from xml.etree import ElementTree
 from scipy.io import wavfile
 from matplotlib import pyplot
+from features import logfbank
 
 
 class Recording:
@@ -28,10 +29,29 @@ class Recording:
         self.starts = numpy.array(starts)
         self.ends = numpy.array(ends)
         self.speakers = speakers
+        self.samplerate = None
+        self.signal = None
+        self.duration = None
 
     def read_recording(self):
         """Read the WAV file corresponding to this Recording. This is deferred because it can be slow."""
-        return wavfile.read(os.path.join(self.root, '{0}.wav'.format(self.root, self.recording_id)))
+        filepath = os.path.join(self.root, '{0}.wav'.format(self.recording_id))
+        self.samplerate, self.signal = wavfile.read(filepath)
+        self.duration = len(self.signal) / self.samplerate
+    
+    def frequency_banks(self, blockSize=600):
+        if self.signal is None:
+            self.read_recording()
+        fbanks = numpy.zeros((0, 1, 26))
+        start = 0
+        while start < len(self.signal):
+            end = start + blockSize * self.samplerate
+            end = end if end < len(self.signal) else len(self.signal)
+            block = self.signal[start:end]
+            fbank = logfbank(block, self.samplerate, winlen=0.05, winstep=0.025)
+            fbanks = numpy.concatenate((fbanks, numpy.reshape(fbank, (len(fbank), 1, 26))))
+            start = end
+        return fbanks
 
     def split_segments(self):
         """Split the WAV file for this recording into individual segments and save those segments in a directory
@@ -43,10 +63,11 @@ class Recording:
             speaker_dir = os.path.join(recording_dir, speaker)
             if not os.path.exists(speaker_dir):
                 os.makedirs(speaker_dir)
-        sample_rate, recording = self.read_recording()
+        if self.signal is None:
+            self.read_recording()
         for start, end, speaker, i in zip(self.starts, self.ends, self.speakers, range(len(self.starts))):
-            segment = recording[int(start * sample_rate):int(end * sample_rate)]
-            wavfile.write(os.path.join(recording_dir, speaker, '{0}.wav'.format(i)), sample_rate, segment)
+            segment = self.signal[int(start * self.samplerate):int(end * self.samplerate)]
+            wavfile.write(os.path.join(recording_dir, speaker, '{0}.wav'.format(i)), self.samplerate, segment)
 
     def read_segment(self, category, i):
         """Read an individual segment WAV file. Returns the sample rate and signal."""
