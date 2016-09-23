@@ -1,5 +1,5 @@
 from matplotlib import pyplot
-from features import mfcc, logfbank
+from python_speech_features import mfcc, logfbank
 import numpy
 
 

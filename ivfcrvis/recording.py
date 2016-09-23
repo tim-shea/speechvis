@@ -31,7 +31,7 @@ class Recording:
 
     def read_recording(self):
         """Read the WAV file corresponding to this Recording. This is deferred because it can be slow."""
-        return wavfile.read(os.path.join(self.root, '{0}.wav'.format(self.root, self.recording_id)))
+        return wavfile.read(os.path.join(self.root, '{0}.wav'.format(self.recording_id)))
 
     def split_segments(self):
         """Split the WAV file for this recording into individual segments and save those segments in a directory
@@ -69,13 +69,14 @@ def parse_time(formatted):
 def plot_speaker_counts(recording):
     """Plot the number of segments in the recording for each speaker."""
     speakers, counts = numpy.unique(recording.speakers, return_counts=True)
-    pyplot.figure()
+    fig = pyplot.figure()
     pyplot.bar(numpy.arange(len(speakers)) + 0.1, counts)
     pyplot.title('Number of Vocalizations by Speaker')
     pyplot.xticks(numpy.arange(len(speakers)) + 0.5, speakers)
     pyplot.xlim(0, len(speakers))
     pyplot.xlabel('Speaker')
     pyplot.ylabel('Count')
+    return fig
 
 
 def plot_durations(recording, speaker=None):
@@ -86,7 +87,7 @@ def plot_durations(recording, speaker=None):
     else:
         i, starts, ends = recording.filter_speaker(speaker)
     durations = ends - starts
-    pyplot.figure()
+    fig = pyplot.figure()
     pyplot.subplot(2, 1, 1)
     pyplot.plot(starts + durations / 2, durations)
     pyplot.title('Vocalization Durations for {0}'.format('ALL' if speaker is None else speaker))
@@ -98,13 +99,14 @@ def plot_durations(recording, speaker=None):
     pyplot.yscale('log')
     pyplot.xlabel('Duration (s)')
     pyplot.ylabel('Count')
+    return fig
 
 
 def plot_intervals(recording, speaker):
     """Plot a time series and histogram of segment intervals labeled as speaker."""
     i, starts, ends = recording.filter_speaker(speaker)
     intervals = starts[1:] - ends[:-1]
-    pyplot.figure()
+    fig = pyplot.figure()
     pyplot.subplot(2, 1, 1)
     pyplot.plot(starts[1:], intervals)
     pyplot.title('Vocalization Intervals for {0}'.format(speaker))
@@ -116,6 +118,7 @@ def plot_intervals(recording, speaker):
     pyplot.yscale('log')
     pyplot.xlabel('Interval (s)')
     pyplot.ylabel('Count')
+    return fig
 
 
 def plot_volubility(recording, speaker):
@@ -130,7 +133,7 @@ def plot_volubility(recording, speaker):
         for start, end in zip(starts, ends):
             volubility[m] += max(min(end_minute, end) - max(start_minute, start), 0)
     volubility /= 60
-    pyplot.figure()
+    fig = pyplot.figure()
     pyplot.subplot(2, 1, 1)
     pyplot.plot(60 * numpy.arange(minutes), volubility)
     pyplot.title('Volubility for {0}'.format(speaker))
@@ -141,3 +144,4 @@ def plot_volubility(recording, speaker):
     pyplot.yscale('log')
     pyplot.xlabel('Volubility')
     pyplot.ylabel('Count')
+    return fig
