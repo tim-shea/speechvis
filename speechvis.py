@@ -6,8 +6,10 @@ from ivfcrvis.recording import *
 from ivfcrvis.mfcc_pca import plot_mfcc_pca
 from matplotlib.pyplot import *
 
-root = 'D:/ivfcr'
-ids = ['e20131030_125347_009146']
+root = 'C:/Users/Public/Documents/ivfcr'
+ids = ['e20160102_095210_010584',
+       'e20160413_154936_010580',
+       'e20160711_124830_010580']
 
 if __name__ == "__main__":
     ion()
